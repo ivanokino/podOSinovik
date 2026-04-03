@@ -1,13 +1,46 @@
-EFI_FILE = BOOTX64.EFI
-SRC = starter.c
-KERNEL_SRC = kernel.c
-KERNEL_BIN = kernel.bin
+
+#vibecoded
+
+
+
+
+
+
+
+
+# ============================================
+# Директории
+# ============================================
+SRC_DIR = src
+BUILD_DIR = build
 IMG_DIR = image
 EFI_DIR = $(IMG_DIR)/EFI/BOOT
 
+# ============================================
+# Файлы
+# ============================================
+EFI_FILE = BOOTX64.EFI
+KERNEL_BIN = kernel.bin
+
+SRC = $(SRC_DIR)/starter.c
+KERNEL_ASM = $(SRC_DIR)/start.asm
+KERNEL_C = $(SRC_DIR)/kernel.c
+KERNEL_LD = $(SRC_DIR)/kernel.ld
+HEADERS = $(SRC_DIR)/structs.h $(SRC_DIR)/types.h
+
+KERNEL_OBJ = $(BUILD_DIR)/kernel.o
+START_OBJ = $(BUILD_DIR)/start.o
+
+# ============================================
+# Компиляторы
+# ============================================
 CC = clang
 LD = ld.lld
+ASM = nasm
 
+# ============================================
+# Флаги
+# ============================================
 CFLAGS_EFI = \
     -target x86_64-unknown-windows \
     -ffreestanding \
@@ -16,7 +49,7 @@ CFLAGS_EFI = \
     -mno-red-zone \
     -nostdlib \
     -fuse-ld=lld \
-    -I. \
+    -I$(SRC_DIR) \
     -Wl,/subsystem:efi_application \
     -Wl,/entry:efi_main
 
@@ -26,42 +59,47 @@ CFLAGS_KERNEL = \
     -mno-red-zone \
     -nostdlib \
     -O2 \
-    -I.
+    -I$(SRC_DIR)
 
 LDFLAGS_KERNEL = \
     -nostdlib \
     -static \
     -z max-page-size=0x1000 \
-    -T kernel.ld
+    -T $(KERNEL_LD)
 
+# ============================================
+# Цели
+# ============================================
 .PHONY: all copy run debug clean clean-img
 
-all: $(EFI_FILE) $(KERNEL_BIN) copy
+all: $(BUILD_DIR) $(EFI_FILE) $(KERNEL_BIN) copy
 
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
 
-$(EFI_FILE): $(SRC) structs.h types.h
+$(EFI_FILE): $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS_EFI) $(SRC) -o $(EFI_FILE)
-	@echo " EFI loader compiled: $(EFI_FILE)"
+	@echo "✅ EFI loader compiled: $(EFI_FILE)"
 
+$(START_OBJ): $(KERNEL_ASM)
+	$(ASM) -f elf64 $(KERNEL_ASM) -o $(START_OBJ)
 
-$(KERNEL_BIN): $(KERNEL_SRC) kernel.ld structs.h types.h
-	$(CC) $(CFLAGS_KERNEL) -c $(KERNEL_SRC) -o kernel.o
-	$(LD) $(LDFLAGS_KERNEL) --oformat binary kernel.o -o $(KERNEL_BIN)
-	@echo " Kernel compiled: $(KERNEL_BIN)"
-	@echo " Kernel size: $$(stat -f %z $(KERNEL_BIN) 2>/dev/null || stat -c %s $(KERNEL_BIN)) bytes"
+$(KERNEL_OBJ): $(KERNEL_C) $(HEADERS)
+	$(CC) $(CFLAGS_KERNEL) -c $(KERNEL_C) -o $(KERNEL_OBJ)
 
+$(KERNEL_BIN): $(START_OBJ) $(KERNEL_OBJ) $(KERNEL_LD)
+	$(LD) $(LDFLAGS_KERNEL) --oformat binary $(START_OBJ) $(KERNEL_OBJ) -o $(KERNEL_BIN)
+	@echo "✅ Kernel compiled: $(KERNEL_BIN)"
+	@echo "📦 Kernel size: $$(stat -f %z $(KERNEL_BIN) 2>/dev/null || stat -c %s $(KERNEL_BIN)) bytes"
 
 copy:
 	@mkdir -p $(EFI_DIR)
 	@cp $(EFI_FILE) $(EFI_DIR)/
 	@cp $(KERNEL_BIN) $(IMG_DIR)/
-	@echo " Files copied to $(IMG_DIR):"
-	@ls -lh $(EFI_DIR)/ 2>/dev/null || echo "  EFI directory: no files"
-	@ls -lh $(IMG_DIR)/ 2>/dev/null || echo "  Image directory: no files"
-
+	@echo "📁 Files copied to $(IMG_DIR)"
 
 run: all
-	@echo "Starting QEMU..."
+	@echo "🚀 Starting QEMU..."
 	qemu-system-x86_64 \
 		-drive format=raw,file=fat:rw:$(IMG_DIR) \
 		-bios /usr/share/edk2/ovmf/OVMF_CODE.fd \
@@ -69,9 +107,8 @@ run: all
 		-serial file:serial.log \
 		-m 2G
 
-
 debug: all
-	@echo " Starting QEMU with GDB debugger (port 1234)..."
+	@echo "🐛 Starting QEMU with GDB..."
 	qemu-system-x86_64 \
 		-drive format=raw,file=fat:rw:$(IMG_DIR) \
 		-bios /usr/share/edk2/ovmf/OVMF_CODE.fd \
@@ -81,10 +118,9 @@ debug: all
 		-m 2G
 
 clean:
-	@rm -rf $(EFI_FILE) kernel.o $(KERNEL_BIN) $(IMG_DIR) serial.log
-	@echo " Cleaned all files"
-
+	@rm -rf $(EFI_FILE) $(KERNEL_BIN) $(BUILD_DIR) $(IMG_DIR) serial.log
+	@echo "🧹 Cleaned all files"
 
 clean-img:
 	@rm -rf $(IMG_DIR)
-	@echo " Cleaned image directory"
+	@echo "🧹 Cleaned image directory"
