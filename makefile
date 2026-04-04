@@ -1,16 +1,8 @@
-
 #vibecoded
 
 
 
 
-
-
-
-
-# ============================================
-# Директории
-# ============================================
 SRC_DIR = src
 BUILD_DIR = build
 IMG_DIR = image
@@ -24,11 +16,11 @@ KERNEL_BIN = kernel.bin
 
 SRC = $(SRC_DIR)/starter.c
 KERNEL_ASM = $(SRC_DIR)/start.asm
-KERNEL_C = $(SRC_DIR)/kernel.c
+KERNEL_C = $(SRC_DIR)/kernel.c $(SRC_DIR)/screen.c
 KERNEL_LD = $(SRC_DIR)/kernel.ld
-HEADERS = $(SRC_DIR)/structs.h $(SRC_DIR)/types.h
+HEADERS = $(SRC_DIR)/structs.h $(SRC_DIR)/types.h $(SRC_DIR)/screen.h $(SRC_DIR)/font.h $(SRC_DIR)/abi.h
 
-KERNEL_OBJ = $(BUILD_DIR)/kernel.o
+KERNEL_OBJS = $(addprefix $(BUILD_DIR)/, $(notdir $(KERNEL_C:.c=.o)))
 START_OBJ = $(BUILD_DIR)/start.o
 
 # ============================================
@@ -39,7 +31,7 @@ LD = ld.lld
 ASM = nasm
 
 # ============================================
-# Флаги
+# Флаги для EFI загрузчика (Windows ABI)
 # ============================================
 CFLAGS_EFI = \
     -target x86_64-unknown-windows \
@@ -53,6 +45,9 @@ CFLAGS_EFI = \
     -Wl,/subsystem:efi_application \
     -Wl,/entry:efi_main
 
+# ============================================
+# Флаги для ядра (System V ABI + атрибуты ms_abi)
+# ============================================
 CFLAGS_KERNEL = \
     -ffreestanding \
     -fno-stack-protector \
@@ -84,11 +79,11 @@ $(EFI_FILE): $(SRC) $(HEADERS)
 $(START_OBJ): $(KERNEL_ASM)
 	$(ASM) -f elf64 $(KERNEL_ASM) -o $(START_OBJ)
 
-$(KERNEL_OBJ): $(KERNEL_C) $(HEADERS)
-	$(CC) $(CFLAGS_KERNEL) -c $(KERNEL_C) -o $(KERNEL_OBJ)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
+	$(CC) $(CFLAGS_KERNEL) -c $< -o $@
 
-$(KERNEL_BIN): $(START_OBJ) $(KERNEL_OBJ) $(KERNEL_LD)
-	$(LD) $(LDFLAGS_KERNEL) --oformat binary $(START_OBJ) $(KERNEL_OBJ) -o $(KERNEL_BIN)
+$(KERNEL_BIN): $(START_OBJ) $(KERNEL_OBJS) $(KERNEL_LD)
+	$(LD) $(LDFLAGS_KERNEL) --oformat binary $(START_OBJ) $(KERNEL_OBJS) -o $(KERNEL_BIN)
 	@echo "✅ Kernel compiled: $(KERNEL_BIN)"
 	@echo "📦 Kernel size: $$(stat -f %z $(KERNEL_BIN) 2>/dev/null || stat -c %s $(KERNEL_BIN)) bytes"
 
