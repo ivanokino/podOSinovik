@@ -1,5 +1,5 @@
-#include "structs.h"
-#include "screen.h"
+#include "../utils/structs.h"
+#include "../drivers/screen.h"
 
 
     MS_ABI

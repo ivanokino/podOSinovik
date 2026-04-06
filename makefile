@@ -3,10 +3,21 @@
 
 
 
+# ============================================
+# Директории
+# ============================================
 SRC_DIR = src
 BUILD_DIR = build
 IMG_DIR = image
 EFI_DIR = $(IMG_DIR)/EFI/BOOT
+
+# ============================================
+# Поддиректории исходников
+# ============================================
+KERNEL_DIR = $(SRC_DIR)/kernel
+DRIVERS_DIR = $(SRC_DIR)/drivers
+UTILS_DIR = $(SRC_DIR)/utils
+EFI_DIR_SRC = $(SRC_DIR)/efi
 
 # ============================================
 # Файлы
@@ -14,12 +25,26 @@ EFI_DIR = $(IMG_DIR)/EFI/BOOT
 EFI_FILE = BOOTX64.EFI
 KERNEL_BIN = kernel.bin
 
+# Загрузчик
 SRC = $(SRC_DIR)/starter.c
-KERNEL_ASM = $(SRC_DIR)/start.asm
-KERNEL_C = $(SRC_DIR)/kernel.c $(SRC_DIR)/screen.c
-KERNEL_LD = $(SRC_DIR)/kernel.ld
-HEADERS = $(SRC_DIR)/structs.h $(SRC_DIR)/types.h $(SRC_DIR)/screen.h $(SRC_DIR)/font.h $(SRC_DIR)/abi.h
 
+# Ядро (ассемблер + C файлы)
+KERNEL_ASM = $(SRC_DIR)/start.asm
+KERNEL_C = \
+    $(KERNEL_DIR)/kernel.c \
+    $(DRIVERS_DIR)/screen.c
+
+KERNEL_LD = $(KERNEL_DIR)/kernel.ld
+
+# Заголовочные файлы
+HEADERS = \
+    $(UTILS_DIR)/structs.h \
+    $(UTILS_DIR)/types.h \
+    $(UTILS_DIR)/abi.h \
+    $(DRIVERS_DIR)/screen.h \
+    $(DRIVERS_DIR)/font.h
+
+# Объектные файлы
 KERNEL_OBJS = $(addprefix $(BUILD_DIR)/, $(notdir $(KERNEL_C:.c=.o)))
 START_OBJ = $(BUILD_DIR)/start.o
 
@@ -42,6 +67,9 @@ CFLAGS_EFI = \
     -nostdlib \
     -fuse-ld=lld \
     -I$(SRC_DIR) \
+    -I$(UTILS_DIR) \
+    -I$(DRIVERS_DIR) \
+    -I$(EFI_DIR_SRC) \
     -Wl,/subsystem:efi_application \
     -Wl,/entry:efi_main
 
@@ -54,7 +82,8 @@ CFLAGS_KERNEL = \
     -mno-red-zone \
     -nostdlib \
     -O2 \
-    -I$(SRC_DIR)
+    -I$(UTILS_DIR) \
+    -I$(DRIVERS_DIR)
 
 LDFLAGS_KERNEL = \
     -nostdlib \
@@ -72,27 +101,44 @@ all: $(BUILD_DIR) $(EFI_FILE) $(KERNEL_BIN) copy
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
+# ============================================
+# Сборка EFI загрузчика
+# ============================================
 $(EFI_FILE): $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS_EFI) $(SRC) -o $(EFI_FILE)
 	@echo "✅ EFI loader compiled: $(EFI_FILE)"
 
+# ============================================
+# Сборка ядра
+# ============================================
 $(START_OBJ): $(KERNEL_ASM)
 	$(ASM) -f elf64 $(KERNEL_ASM) -o $(START_OBJ)
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
+# Правило для компиляции .c файлов из разных директорий
+$(BUILD_DIR)/kernel.o: $(KERNEL_DIR)/kernel.c $(HEADERS)
 	$(CC) $(CFLAGS_KERNEL) -c $< -o $@
 
+$(BUILD_DIR)/screen.o: $(DRIVERS_DIR)/screen.c $(HEADERS)
+	$(CC) $(CFLAGS_KERNEL) -c $< -o $@
+
+# Линковка ядра
 $(KERNEL_BIN): $(START_OBJ) $(KERNEL_OBJS) $(KERNEL_LD)
 	$(LD) $(LDFLAGS_KERNEL) --oformat binary $(START_OBJ) $(KERNEL_OBJS) -o $(KERNEL_BIN)
 	@echo "✅ Kernel compiled: $(KERNEL_BIN)"
 	@echo "📦 Kernel size: $$(stat -f %z $(KERNEL_BIN) 2>/dev/null || stat -c %s $(KERNEL_BIN)) bytes"
 
+# ============================================
+# Копирование в образ
+# ============================================
 copy:
 	@mkdir -p $(EFI_DIR)
 	@cp $(EFI_FILE) $(EFI_DIR)/
 	@cp $(KERNEL_BIN) $(IMG_DIR)/
 	@echo "📁 Files copied to $(IMG_DIR)"
 
+# ============================================
+# Запуск
+# ============================================
 run: all
 	@echo "🚀 Starting QEMU..."
 	qemu-system-x86_64 \
@@ -112,6 +158,9 @@ debug: all
 		-s -S \
 		-m 2G
 
+# ============================================
+# Очистка
+# ============================================
 clean:
 	@rm -rf $(EFI_FILE) $(KERNEL_BIN) $(BUILD_DIR) $(IMG_DIR) serial.log
 	@echo "🧹 Cleaned all files"

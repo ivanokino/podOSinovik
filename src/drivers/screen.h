@@ -1,8 +1,8 @@
  #ifndef SCREEN_H
  #define SCREEN_H
  
- #include "types.h"
-#include "abi.h"
+ #include "../utils/types.h"
+#include "../utils/abi.h"
 MS_ABI void screen_init(struct framebuffer_info* fb);
 
 MS_ABI u32 make_need_color(u8 r, u8 g, u8 b);

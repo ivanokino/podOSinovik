@@ -1,6 +1,6 @@
-#include "structs.h"
+#include "../utils/structs.h"
 #include "font.h"
-#include "abi.h"
+#include "../utils/abi.h"
 static struct framebuffer_info* s_fb_inf = 0;
 #define WHITE 0x00ffffff
 #define BLACK 0x00000000
@@ -51,15 +51,6 @@ MS_ABI void draw_char(char c, u32 x, u32 y, u32 fg, u32 bg){
     }
 
 }
-
-//if x + font wieght or y+wontheight > max x or max y return
-//if(c<32 or c>126) return
-//glyph = font[c-32]
-//for(int row=o row<height row ++)
-//line prt base+(row+y)*pitch
-//for(col col<wight col++)
-//if(gliph & (1<<(7-col)))
-//lineprt[col] = fg color else bg color
 
 
 
