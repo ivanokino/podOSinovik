@@ -13,5 +13,16 @@ typedef signed int s32;
 typedef unsigned long long u64;
 typedef signed long long s64;
 
+#define low_16(address)(u16)((address)&0xFFFF)
+#define high_16(address)(u16)(((address)>>16)&0xFFFF)
 
+#define high_32(address)(u32)((address)>>32)
+
+#define middle_16(address)(u16)(((address)>>16)&0xffff)
+
+
+
+///
+///
 #endif
+

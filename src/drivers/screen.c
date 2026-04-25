@@ -1,6 +1,7 @@
-#include "../utils/structs.h"
+
 #include "font.h"
-#include "../utils/abi.h"
+
+#include "screen.h"
 static struct framebuffer_info* s_fb_inf = 0;
 #define WHITE 0x00ffffff
 #define BLACK 0x00000000
@@ -64,7 +65,13 @@ MS_ABI void putchar(char c){
         s_cursor_x = 0;
     }else if(c=='\t'){
         for(int i=0; i<4; i++) putchar(' ');
-    }else{
+    }else if(c=='\b'){
+        if(s_cursor_x>0){
+            s_cursor_x-=s_font_width;
+            draw_char(' ', s_cursor_x, s_cursor_y, s_fg_color, s_bg_color);
+        }
+    }
+    else{
         draw_char(c, s_cursor_x, s_cursor_y, s_fg_color, s_bg_color);
         s_cursor_x += s_font_width;
     }
