@@ -1,10 +1,10 @@
 #include "efi/efi.h"
 #include "efi/efilib.h"
 #include "efi/efiprot.h"
-
-
-
 #include "structs.h"
+
+
+
 static BOOLEAN MyCompareGuid(EFI_GUID *Guid1, EFI_GUID *Guid2) {
     UINT32 *g1 = (UINT32*)Guid1;
     UINT32 *g2 = (UINT32*)Guid2;
@@ -27,13 +27,17 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"hello\n");
     
-    ///////////FYLE SHI
+    /////// FIND MADT, FOR IO_APIC AND L_APIC ///////
 
-    //get io and local APIC addrs
     struct XSDP* xsdp = NULL; //p - pointer
+
     u32 lapic_base =0;
     u32 ioapic_base =0;
-    EFI_GUID acpi20_guid = ACPI_20_TABLE_GUID;
+
+    EFI_GUID acpi20_guid = ACPI_20_TABLE_GUID; 
+
+    // FIND XSDP
+
         for(int i =0; i<SystemTable->NumberOfTableEntries; i++){
             if(MyCompareGuid(&SystemTable->ConfigurationTable[i].VendorGuid, &acpi20_guid)){
                 xsdp = (struct XSDP*)SystemTable->ConfigurationTable[i].VendorTable;
@@ -43,12 +47,14 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     if(!xsdp) SystemTable->ConOut->OutputString(SystemTable->ConOut, L"cant find xsdp");
 
   
-  
+    //GET XSDT
     struct ACPI_HEADER *xsdt = (struct ACPI_HEADER*)(u64)xsdp->XsdtAddress;
 
-    u64* entries = (u64*)(xsdt+1);
-    u32 entries_count = (xsdt->Length - sizeof(struct ACPI_HEADER))/8;
+    u64* entries = (u64*)(xsdt+1); //SKIP HEADER
+    u32 entries_count = (xsdt->Length - sizeof(struct ACPI_HEADER))/8; //size of all - size of header / 8 bytes
     struct MADT* madt; 
+
+        //FIND MADT
         for(int i =0; i<entries_count;i++){
         struct ACPI_HEADER* table = (struct ACPI_HEADER*)(u64)entries[i];
             if(table->Signature == 0x43495041){ //APIC
@@ -59,10 +65,14 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         }
         if(!madt) SystemTable->ConOut->OutputString(SystemTable->ConOut, L"cant find MADT" );
 
+    //GET LAPIC
     lapic_base = madt->LocalApicAddress;
     
     u8 *ptr = (u8*)madt + sizeof(struct ACPI_HEADER)+8;
     u8 *end = (u8*)madt + madt->Header.Length;
+
+
+    //GET IOAPIC
     while(ptr<end){
         u8 type = ptr[0];
         u8 length = ptr[1];
