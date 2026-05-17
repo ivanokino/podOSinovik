@@ -97,16 +97,16 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     );
 
 
-    /////////////GRAPHIC SHI
+    /////////////GRAPHICS ////////////////////////////
     EFI_GRAPHICS_OUTPUT_PROTOCOL *graphics;
     EFI_GUID graph_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-    
+    ///it finding protocol in the array in memory
     status = SystemTable->BootServices->LocateProtocol(
         &graph_guid,
         NULL,
         (void**)&graphics
     );
-    
+
 
 
     ////////////
@@ -119,7 +119,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     EFI_FILE_PROTOCOL *Root;
     status = FileSys->OpenVolume(FileSys, &Root);
 
-    ///eror check later
+    if(EFI_ERROR(status)){  
+    SystemTable->ConOut->OutputString(SystemTable->ConOut, L"OpenVolume error");
+    return status;}
     
     EFI_FILE_PROTOCOL *File;
     status = Root->Open(
@@ -129,7 +131,11 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         EFI_FILE_MODE_READ,
         0
     );
-    //error file cheak
+
+ if(EFI_ERROR(status)){
+    SystemTable->ConOut->OutputString(SystemTable->ConOut, L"kernel.bin open error");
+    return status;}
+
 SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
 
     EFI_FILE_INFO *FileInfo;
@@ -186,10 +192,14 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
         &DescriptorSize,
         &DescriptorVersion
     );
-    //eror check late
-    MemoryMapSize = MemoryMapSize+DescriptorSize*10;
-    status = SystemTable->BootServices->AllocatePool(
-        EfiLoaderData,
+    //  if(EFI_ERROR(status)){
+    //     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"MemoryMapSize error");
+    //     return status;} IDK WHY BUT ITS RETURNS ERROR ALWAYS
+
+        MemoryMapSize = MemoryMapSize+DescriptorSize*10;
+        
+        status = SystemTable->BootServices->AllocatePool(
+            EfiLoaderData,
         MemoryMapSize,
         (void **)&MemoryMap
     );
