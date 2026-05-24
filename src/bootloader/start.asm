@@ -6,6 +6,10 @@ _start:
 
 mov rsp, stack_top
 
+;from microsoft abi to system V
+mov rdi, rcx
+mov rsi, rdx
+mov rdx, r8
 call kernel_main
 ;;;;;;;;;;;;;;;
 cli

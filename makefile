@@ -36,7 +36,8 @@ KERNEL_C = \
     $(DRIVERS_DIR)/keyboard.c \
     $(DRIVERS_DIR)/APIC.c \
     $(CPU_DIR)/idt.c \
-    $(CPU_DIR)/isr_irq.c
+    $(CPU_DIR)/isr_irq.c \
+    $(UTILS_DIR)/string.c
 
 KERNEL_LD = $(KERNEL_DIR)/kernel.ld
 
@@ -52,7 +53,8 @@ KERNEL_OBJS = \
     $(BUILD_DIR)/keyboard.o \
     $(BUILD_DIR)/APIC.o \
     $(BUILD_DIR)/idt.o \
-    $(BUILD_DIR)/isr_irq.o
+    $(BUILD_DIR)/isr_irq.o \
+    $(BUILD_DIR)/string.o
 
 START_OBJ = $(BUILD_DIR)/start.o
 INTERRUPT_OBJ = $(BUILD_DIR)/interrupt.o
@@ -144,6 +146,9 @@ $(BUILD_DIR)/%.o: $(DRIVERS_DIR)/%.c $(HEADERS)
 $(BUILD_DIR)/%.o: $(CPU_DIR)/%.c $(HEADERS)
 	$(CC) $(CFLAGS_KERNEL) -c $< -o $@
 
+$(BUILD_DIR)/%.o: $(UTILS_DIR)/%.c $(HEADERS)
+	$(CC) $(CFLAGS_KERNEL) -c $< -o $@
+
 # Линковка ядра
 $(KERNEL_BIN): $(START_OBJ) $(INTERRUPT_OBJ) $(KERNEL_OBJS) $(KERNEL_LD)
 	$(LD) $(LDFLAGS_KERNEL) --oformat binary $(START_OBJ) $(INTERRUPT_OBJ) $(KERNEL_OBJS) -o $(KERNEL_BIN)
@@ -171,7 +176,8 @@ run: all
 		-bios /usr/share/edk2/ovmf/OVMF_CODE.fd \
 		-monitor stdio \
 		-serial file:serial.log \
-		-m 2G
+		-m 2G \
+        
 
 debug: all
 	@echo "🐛 Starting QEMU with GDB..."

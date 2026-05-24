@@ -153,10 +153,10 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
         InfoSize,
         (void**)&FileInfo
     );
-        //eror chec
+
     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"allocate for fileinfo succes\n");
     status = File->GetInfo(File, &gEfiFileInfoGuid, &InfoSize, FileInfo);
-    //eror chekdc
+   
 
     UINT64 FileSize = FileInfo->FileSize;
 

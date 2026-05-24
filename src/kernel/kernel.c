@@ -1,10 +1,13 @@
+
+
 #include "../utils/types.h"
 #include "../drivers/screen.h"
 #include "../cpu/isr_irq.h"
 #include "../drivers/APIC.h"
 #include "../drivers/ports.h"
 #include "../drivers/keyboard.h"
-    MS_ABI
+
+ 
     void kernel_main(struct framebuffer_info* fb, u32 lapic_base, u32 ioapic_base) {
 
        
@@ -26,7 +29,10 @@
         init_apic(lapic_base, ioapic_base);
         init_keyboard();
         print("welcome to podOSinovik\n");
+        for(int i =0; i<fb->pitch/8; i++) print("test");
         u8 last_scancode = 0;
+        
+        print("\n");
 
 
     asm volatile("sti");    

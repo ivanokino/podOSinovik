@@ -2,8 +2,6 @@
 #define IDT_H
 
 #include "../utils/types.h"
-#include "../utils/abi.h"
-
 
 
 typedef struct {
@@ -24,8 +22,8 @@ typedef struct{
 extern idt_gate_t idt[256];
 extern idt_register_t idt_reg;
 
-MS_ABI void set_idt_gate(int n, u64 handler);
-MS_ABI void set_idt();
+ void set_idt_gate(int n, u64 handler);
+ void set_idt();
 
 
 

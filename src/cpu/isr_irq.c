@@ -3,7 +3,7 @@
 #include "../drivers/screen.h"
 #include "../drivers/APIC.h"
 
-MS_ABI void int_to_ascii(int n, char str[]){
+ void int_to_ascii(int n, char str[]){
     int i, sign;
     if((sign=n)<0) n = -n;
     i=0;
@@ -25,7 +25,7 @@ MS_ABI void int_to_ascii(int n, char str[]){
 isr_t interrupt_handlers[256];
 
 
-MS_ABI void isr_install() {
+ void isr_install() {
     set_idt_gate(0, (u64)isr0);
     set_idt_gate(1, (u64)isr1);
     set_idt_gate(2, (u64)isr2);
@@ -115,7 +115,7 @@ char *exception_messages[] = {
     "Reserved"
 };
 
- MS_ABI void isr_handler(registers_t *r){
+  void isr_handler(registers_t *r){
     print("interrupt :");
     char s[17];
     int_to_ascii(r->error_code,s);
@@ -127,11 +127,11 @@ char *exception_messages[] = {
     
 }
 
-MS_ABI void register_interrupt_handler(u8 n, isr_t handler){
+ void register_interrupt_handler(u8 n, isr_t handler){
     interrupt_handlers[n] = handler;
 }
 
-MS_ABI void irq_handler(registers_t *r){
+ void irq_handler(registers_t *r){
   
     if(interrupt_handlers[r->vector]!=0){
         isr_t handler = interrupt_handlers[r->vector];

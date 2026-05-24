@@ -20,7 +20,7 @@ isr_common_stub:
     push r13     
     push r14      
     push r15 
-    mov rcx,rsp ;cuz void isr_handler(registers_t r)
+    mov rdi,rsp ;cuz void isr_handler(registers_t r)
     call isr_handler
     
     pop r15
@@ -59,7 +59,7 @@ irq_common_stub:
     push r14     
     push r15     
     
-    mov rcx, rsp 
+    mov rdi, rsp 
     call irq_handler
     
     pop r15      

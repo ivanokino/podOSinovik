@@ -1,7 +1,6 @@
 #ifndef ISR_IRQ_H
 #define ISR_IRQ_H
 #include "../utils/types.h"
-#include "../utils/abi.h"
 
 extern void isr0();
 extern void isr1();
@@ -77,9 +76,9 @@ typedef struct {
     u64 vector, error_code;
     u64 rip, cs, rflags, rsp, ss;
 } registers_t;
-MS_ABI void isr_install();
+ void isr_install();
 typedef void(*isr_t)(registers_t*);
-MS_ABI void register_interrupt_handler(u8 n, isr_t handler);
+ void register_interrupt_handler(u8 n, isr_t handler);
 
 
 
