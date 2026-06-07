@@ -4,7 +4,7 @@
 
 #ifndef STRUCTS_H
 #define STRUCTS_H
-#include "types.h"
+#include "../utils/types.h"
 
 // struct RSDP{
 //     char Signature[8];
