@@ -2,26 +2,26 @@
 #include "idt.h"
 #include "../drivers/screen.h"
 #include "../drivers/APIC.h"
+#include "../utils/string.h"
+/*
+HOW IDT WORKS:
+    we have 2 arrays: idt_gate_t idt[256] and isr_t interrupt_handlers[256]
+    there is 32 isr and 16 irq funcs ASM-file.
+    isr_install() is registering all this funcs in the idt[]
+    ISR ERROR CODE - CPU pushing error code by itself and we are pushing num of isr
+    ISR NOERROR - pushing 0 and isr's code
+    IRQ - pushing 0 and irq's code+32
+    isr is calling isr's stub, irq - irq's
+    if isr's stub: pushing all cpu registers, calling isr_handler, printing error
+    if irq's: calling interrupt_handlers[r->vector] and EOI in APIC
+    idt[32] is IRQ0 which related interrupt_handlers[32]
 
- void int_to_ascii(int n, char str[]){
-    int i, sign;
-    if((sign=n)<0) n = -n;
-    i=0;
-    do{
-        str[i++]=n%10+'0';
-    }while ((n/=10)>0);
-    if(sign<0)str[i++]='-';
-    str[i]='\0';
 
-    int lenght = 0;
-    while(str[lenght]!='\0')lenght++;
+*/
 
-    for(int i=0;i<lenght/2;i++){
-        char temp = str[i];
-        str[i]=str[lenght-i-1];
-        str[lenght-i-1]=temp;
-    }
-}
+
+
+
 isr_t interrupt_handlers[256];
 
 

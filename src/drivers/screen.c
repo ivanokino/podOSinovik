@@ -60,7 +60,7 @@ static u32 s_bg_color = 0x00000000;
         s_cursor_x =0; 
         s_cursor_y += s_font_height; 
             com_buffer_counter = 0;
-            for(int i =0; i<141; i++){
+            for(int i =0; i<200; i++){
                 com_buffer[i]=0;
             }
     }
@@ -102,3 +102,31 @@ static u32 s_bg_color = 0x00000000;
     }
 }
   
+ void move(u32 x, u32 y){
+    s_cursor_x =x; s_cursor_y =y;
+ }
+ 
+ void clear_screen(){
+      for (u32 y = 0; y < s_fb_inf->height; y++) {
+        for (u32 x = 0; x < s_fb_inf->width; x++) {
+            u32 index = y * s_fb_inf->pitch + x;
+            u32* fb_base = (u32*)s_fb_inf->base;
+            fb_base[index] = 0x0000000;
+        }
+    } 
+    move(0,0);
+ }  
+
+
+
+void draw_image(int x, int y, int w, int h, const u32 *pixels) {
+   
+  u32* fb_base = (u32*)s_fb_inf->base;
+        for(int row =0; row <h &&  (y+row)< s_fb_inf->height;row++ ){
+            for(int col =0; col < w && (x+col)<s_fb_inf->width;col++){
+                int src_idx = row* w+col;
+                int dst_idx = (y+row)*s_fb_inf->pitch +(x+col);
+                fb_base[dst_idx] = pixels[src_idx];
+            }
+        }
+}

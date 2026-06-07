@@ -2,22 +2,36 @@
 #include "efi/efilib.h"
 #include "efi/efiprot.h"
 #include "structs.h"
+/*plan: find xsdp in SystemTable->ConfigurationTable
+        get xsdt in xsdp->XsdtAddress
+        find MADT in xsdt
+        get lapic in lapic_base = madt->LocalApicAddress
+        find IOAPIC in madt
 
-
-
-static BOOLEAN MyCompareGuid(EFI_GUID *Guid1, EFI_GUID *Guid2) {
-    UINT32 *g1 = (UINT32*)Guid1;
-    UINT32 *g2 = (UINT32*)Guid2;
+        locate file system protocol and graphic protocol
+        FileSys->OpenVolume(FileSys, &Root); open root dir
+        open kernel.bin
+        get info about kernel
+        allocatepool for this info
+        UINTN Pages = EFI_SIZE_TO_PAGES(FileSize)
+        AllocatePages in 2mb addr for kernel
+        read kernel in memory
+        File->Close(File);  Root->Close(Root);
+        GetMemoryMap size
+        alocatepool for GetMemoryMap (also get memory map's size)
+        GetMemoryMap but with writing in memory
+        fill out framebuffer_info
+        ExitBootServices
+        kernel()
     
-    for (int i = 0; i < 4; i++) {  // 4 x 32-bit = 128-bit GUID
-        if (g1[i] != g2[i]) return FALSE;
-    }
-    return TRUE;
-}
+
+*/
+
+static BOOLEAN MyCompareGuid(EFI_GUID *Guid1, EFI_GUID *Guid2);
 
 typedef void (*KernelEntry)(struct framebuffer_info* fb_inf, u32 lapic_base, u32 ioapic_base );
  
-EFI_GUID gEfiFileInfoGuid = EFI_FILE_INFO_ID;
+
 EFI_STATUS
 EFIAPI      
 efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
@@ -100,21 +114,21 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     /////////////GRAPHICS ////////////////////////////
     EFI_GRAPHICS_OUTPUT_PROTOCOL *graphics;
     EFI_GUID graph_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-    ///it finding protocol in the array in memory
+    ///its finding protocol in the array in memory
     status = SystemTable->BootServices->LocateProtocol(
         &graph_guid,
         NULL,
         (void**)&graphics
     );
 
-
-
-    ////////////
     if(EFI_ERROR(status)){
-    SystemTable->ConOut->OutputString(SystemTable->ConOut, L"LocateProtocol error");
+    SystemTable->ConOut->OutputString(SystemTable->ConOut, L"grapicLocateProtocol error");
     return status;}
 
-    SystemTable->ConOut->OutputString(SystemTable->ConOut, L"LocateProtocol succes\n");
+    ////////////
+
+
+    SystemTable->ConOut->OutputString(SystemTable->ConOut, L" graphic LocateProtocol succes\n");
 
     EFI_FILE_PROTOCOL *Root;
     status = FileSys->OpenVolume(FileSys, &Root);
@@ -137,7 +151,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     return status;}
 
 SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
+    
 
+    EFI_GUID gEfiFileInfoGuid = EFI_FILE_INFO_ID;
     EFI_FILE_INFO *FileInfo;
     UINTN InfoSize = 0;
     status = File->GetInfo(
@@ -159,26 +175,34 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
    
 
     UINT64 FileSize = FileInfo->FileSize;
-
-    EFI_PHYSICAL_ADDRESS KernelAddr =0x200000;//bad but okay i guesss
     UINTN Pages = EFI_SIZE_TO_PAGES(FileSize);
-    
-    status = SystemTable->BootServices->AllocatePages(
-        AllocateAddress, 
-        EfiLoaderData,
-        Pages,
-        &KernelAddr 
-    );
+
+
+ if(EFI_ERROR(status)){
+    SystemTable->ConOut->OutputString(SystemTable->ConOut, L"AllocatePages ebaniy");
+    return status;}
+ EFI_PHYSICAL_ADDRESS KernelAddr = 0x200000;  // 2 mb
+
+ status = SystemTable->BootServices->AllocatePages(
+    AllocateAddress, 
+    EfiLoaderData,
+    Pages,
+     &KernelAddr
+     );
     //eror checl later
+
     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"allocate for kernel succes\n");
+    
     UINTN ReadSize = (UINTN)FileSize;
     status = File->Read(File, &ReadSize, (void*)KernelAddr);
-    //ckeck
 
+    //ckeck
+    
     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"kernel is reed\n");
     File->Close(File);
     Root->Close(Root);
     SystemTable->BootServices->FreePool(FileInfo);
+
 
     UINTN MemoryMapSize = 0;
     EFI_MEMORY_DESCRIPTOR *MemoryMap = NULL;
@@ -192,9 +216,9 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
         &DescriptorSize,
         &DescriptorVersion
     );
-    //  if(EFI_ERROR(status)){
-    //     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"MemoryMapSize error");
-    //     return status;} IDK WHY BUT ITS RETURNS ERROR ALWAYS
+    // ALWAYS RETURNS EFI_BUFFER_TOO_SMALL
+
+
 
         MemoryMapSize = MemoryMapSize+DescriptorSize*10;
         
@@ -214,13 +238,24 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
     );
     //eror check
 
-    EFI_GRAPHICS_OUTPUT_PROTOCOL* Gop;
+    
 
 
 
+
+    struct framebuffer_info info;//// ALLOCATE POOLL LATER
+    info.base = graphics->Mode->FrameBufferBase;
+    info.size = graphics->Mode->FrameBufferSize;
+    info.width = graphics->Mode->Info->HorizontalResolution ;
+    info.height = graphics->Mode->Info->VerticalResolution;
+    info.pitch = graphics->Mode->Info->PixelsPerScanLine;
+    info.pixel_format = graphics->Mode->Info->PixelFormat;
+    info.bpp = 4;
+    
 
 
     status = SystemTable->BootServices->ExitBootServices(ImageHandle, Mapkey);
+    
     if(EFI_ERROR(status)){
         SystemTable->ConOut->OutputString(SystemTable->ConOut, L"ExitBootServices error");
         return status;
@@ -230,23 +265,30 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
 
     //////////////////////////////////////////////
 
-
-    //ENTRY
-    struct framebuffer_info info;//// ALLOCATE POOLL LATER
-    info.base = graphics->Mode->FrameBufferBase;
-    info.size = graphics->Mode->FrameBufferSize;
-    info.width = graphics->Mode->Info->HorizontalResolution ;
-    info.height = graphics->Mode->Info->VerticalResolution;
-    info.pitch = graphics->Mode->Info->PixelsPerScanLine;
-    info.pixel_format = graphics->Mode->Info->PixelFormat;//?
-    info.bpp = 4;//?
-
-    
-
-
     KernelEntry entry = (KernelEntry)KernelAddr;
     entry(&info, lapic_base, ioapic_base);
   
     
     return EFI_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+static BOOLEAN MyCompareGuid(EFI_GUID *Guid1, EFI_GUID *Guid2) {
+    UINT32 *g1 = (UINT32*)Guid1;
+    UINT32 *g2 = (UINT32*)Guid2;
+    
+    for (int i = 0; i < 4; i++) {  // 4 x 32-bit = 128-bit GUID
+        if (g1[i] != g2[i]) return FALSE;
+    }
+    return TRUE;
 }

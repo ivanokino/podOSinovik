@@ -13,6 +13,8 @@
  void draw_char(char c, u32 x, u32 y, u32 fg, u32 bg);
 
  void putchar(char c);
- 
+void draw_image(int x, int y, int w, int h, const u32 *pixels);
  void print(char* str);
+ void move(u32 x, u32 y);
+ void clear_screen();
 #endif

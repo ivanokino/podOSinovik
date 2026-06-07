@@ -71,8 +71,8 @@ extern void irq15();
 
 
 typedef struct {
-    u64 rdi, rsi, rdx, rcx, rbx, rax, rbp;
-    u64 r8, r9, r10, r11, r12, r13, r14, r15; 
+    u64 r15, r14, r13, r12, r11, r10, r9, r8;
+    u64 rbp, rax, rbx, rcx, rdx, rsi, rdi;
     u64 vector, error_code;
     u64 rip, cs, rflags, rsp, ss;
 } registers_t;

@@ -2,19 +2,29 @@
 #include "ports.h"
 #include "screen.h"
 #include "../utils/string.h"
+#include "../bootloader/structs.h"
+#include "shell.h"
 u8 com_buffer[200];
 u16 com_buffer_counter = 0;
-//  void print_letter(u8 scancode);
+
+
+struct framebuffer_info* our_fb;
+
+
 static void keyboard_callback(registers_t *regs){
     u8 scancode = port_byte_get(0x60);
    
     if(scancode&0x80) return;
     print_letter(scancode);
 }
+
  void init_keyboard(){
     register_interrupt_handler(IRQ1, keyboard_callback);
+  
+   
     print("keyboard registered\n");
 }
+
 void print_letter(u8 scancode){
    
     if(scancode & 0x80) return;
@@ -345,10 +355,5 @@ void print_letter(u8 scancode){
     }
 }
 
-void execute_command(u8 *com_buffer){
 
-    if(strcmp(com_buffer, "WWW")==0){ 
-        print("TEST COMMAND\n");
-    }
  
-}
