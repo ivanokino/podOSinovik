@@ -20,8 +20,9 @@ all:
 	clang $(KERNEL_FLAGS) -c src/cpu/idt.c -o build/idt.o
 	clang $(KERNEL_FLAGS) -c src/cpu/isr_irq.c -o build/isr_irq.o
 	clang $(KERNEL_FLAGS) -c src/utils/string.c -o build/string.o
-	
-	ld.lld $(LD_FLAGS) build/start.o build/interrupt.o build/kernel.o build/screen.o build/ports.o build/keyboard.o build/APIC.o build/shell.o build/idt.o build/isr_irq.o build/string.o -o kernel.bin
+	clang $(KERNEL_FLAGS) -c src/drivers/memory.c -o build/memory.o
+	ld.lld $(LD_FLAGS) build/start.o build/interrupt.o  build/kernel.o build/screen.o build/memory.o build/ports.o build/keyboard.o build/APIC.o build/shell.o build/idt.o build/isr_irq.o build/string.o -o kernel.bin
+
 	mkdir -p image/EFI/BOOT
 	cp BOOTX64.EFI image/EFI/BOOT/
 	cp kernel.bin image/
@@ -40,12 +41,12 @@ run:
 	clang $(KERNEL_FLAGS) -c src/cpu/idt.c -o build/idt.o
 	clang $(KERNEL_FLAGS) -c src/cpu/isr_irq.c -o build/isr_irq.o
 	clang $(KERNEL_FLAGS) -c src/utils/string.c -o build/string.o
-	
-	ld.lld $(LD_FLAGS) build/start.o build/interrupt.o build/kernel.o build/screen.o build/ports.o build/keyboard.o build/APIC.o build/shell.o build/idt.o build/isr_irq.o build/string.o -o kernel.bin
+	clang $(KERNEL_FLAGS) -c src/drivers/memory.c -o build/memory.o
+	ld.lld $(LD_FLAGS) build/start.o build/interrupt.o  build/kernel.o build/screen.o build/memory.o build/ports.o build/keyboard.o build/APIC.o build/shell.o build/idt.o build/isr_irq.o build/string.o -o kernel.bin
 	mkdir -p image/EFI/BOOT
 	cp BOOTX64.EFI image/EFI/BOOT/
 	cp kernel.bin image/
-	qemu-system-x86_64 -drive format=raw,file=fat:rw:image -bios /usr/share/edk2/ovmf/OVMF_CODE.fd -monitor stdio -m 2G
+	qemu-system-x86_64 -drive format=raw,file=fat:rw:image -bios /usr/share/edk2/ovmf/OVMF_CODE.fd -monitor stdio -m 2G 
 
 debug:
 	qemu-system-x86_64 -drive format=raw,file=fat:rw:image -bios /usr/share/edk2/ovmf/OVMF_CODE.fd -s -S -monitor stdio -m 2G

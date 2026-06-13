@@ -6,5 +6,5 @@
 
 u8 strcmp(u8 *str1, u8* str2);
 void int_to_ascii(int n, char str[]);
-
+void u64_to_ascii(signed long long n, char str[]);
 #endif

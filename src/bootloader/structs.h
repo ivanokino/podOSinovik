@@ -5,7 +5,8 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 #include "../utils/types.h"
-
+#include "../efi/efi.h"
+#include "../efi/efilib.h"
 // struct RSDP{
 //     char Signature[8];
 //     u8 CheckSum;
@@ -13,7 +14,11 @@
 //     u8 Revision;
 //     u32 RsdtAddress;
 // }__attribute__((packed));
-
+struct MemMapInfo{
+EFI_MEMORY_DESCRIPTOR* MemoryMap;
+unsigned int    MapSize;
+unsigned int DescriptorSize;
+}__attribute__((packed));
 
 struct XSDP {
     char Signature[8];

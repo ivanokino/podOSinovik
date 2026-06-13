@@ -29,7 +29,7 @@
 
 static BOOLEAN MyCompareGuid(EFI_GUID *Guid1, EFI_GUID *Guid2);
 
-typedef void (*KernelEntry)(struct framebuffer_info* fb_inf, u32 lapic_base, u32 ioapic_base );
+typedef void (*KernelEntry)(struct framebuffer_info* fb_inf, u32 lapic_base, u32 ioapic_base , struct MemMapInfo* MemMapInfo);
  
 
 EFI_STATUS
@@ -178,9 +178,6 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
     UINTN Pages = EFI_SIZE_TO_PAGES(FileSize);
 
 
- if(EFI_ERROR(status)){
-    SystemTable->ConOut->OutputString(SystemTable->ConOut, L"AllocatePages ebaniy");
-    return status;}
  EFI_PHYSICAL_ADDRESS KernelAddr = 0x200000;  // 2 mb
 
  status = SystemTable->BootServices->AllocatePages(
@@ -227,21 +224,6 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
         MemoryMapSize,
         (void **)&MemoryMap
     );
-    //eror checj
-
-    status = SystemTable->BootServices->GetMemoryMap(
-        &MemoryMapSize,
-        MemoryMap,
-        &Mapkey,
-        &DescriptorSize,
-        &DescriptorVersion
-    );
-    //eror check
-
-    
-
-
-
 
     struct framebuffer_info info;//// ALLOCATE POOLL LATER
     info.base = graphics->Mode->FrameBufferBase;
@@ -252,11 +234,22 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
     info.pixel_format = graphics->Mode->Info->PixelFormat;
     info.bpp = 4;
     
+    struct MemMapInfo MemMapInfo;
+   
 
 
+ status = SystemTable->BootServices->GetMemoryMap(
+        &MemoryMapSize,
+        MemoryMap,
+        &Mapkey,
+        &DescriptorSize,
+        &DescriptorVersion
+    );
+  MemMapInfo.MapSize = (u32)MemoryMapSize;
+    MemMapInfo.MemoryMap = (EFI_MEMORY_DESCRIPTOR*)MemoryMap;
+    MemMapInfo.DescriptorSize = (u32)DescriptorSize;
     status = SystemTable->BootServices->ExitBootServices(ImageHandle, Mapkey);
-    
-    if(EFI_ERROR(status)){
+        if(EFI_ERROR(status)){
         SystemTable->ConOut->OutputString(SystemTable->ConOut, L"ExitBootServices error");
         return status;
     }
@@ -266,7 +259,7 @@ SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Open file succes\n");
     //////////////////////////////////////////////
 
     KernelEntry entry = (KernelEntry)KernelAddr;
-    entry(&info, lapic_base, ioapic_base);
+    entry(&info, lapic_base, ioapic_base, &MemMapInfo);
   
     
     return EFI_SUCCESS;
