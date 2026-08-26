@@ -34,6 +34,7 @@ extern void init_paging(void) __attribute__((weak));
         print("BGR\n");
         else print ("RGB\n");
         print_largest_block(MemMapInfo);
+        u64 heap_addr = init_heap(MemMapInfo);
 
     //    for (u32 i = 0; i < fb->width * fb->height; i++) {
     //     fb_base[i] = 0x00404040;
