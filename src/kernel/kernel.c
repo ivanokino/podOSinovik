@@ -28,7 +28,7 @@ extern void init_paging(void) __attribute__((weak));
         
         print("\n");
 
-        char* format[3];
+        char format[3];
         int_to_ascii(fb->pixel_format, format);
         if(strcmp(format, "1")==0)
         print("BGR\n");
